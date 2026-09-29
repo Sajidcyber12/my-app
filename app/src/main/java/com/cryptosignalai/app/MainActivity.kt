@@ -82,7 +82,7 @@ fun CryptoApp() {
                         1 -> Scanner(signals, onSelect = { selected = it })
                         2 -> Watchlist(signals.filter { favorites.contains(it.symbol) }, onSelect = { selected = it })
                         3 -> Notifications()
-                        else -> Profile()
+                        else -> Profile(onNotifications = { tab = 3 })
                     }
                 }
             }
@@ -203,11 +203,11 @@ fun Notifications() {
 }
 
 @Composable
-fun Profile() {
+fun Profile(onNotifications: () -> Unit = {}) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Header("Profile & Settings", "Customize your app experience")
         Text("👤  Crypto Signal User", Modifier.padding(20.dp), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        listOf("🔔 Notifications", "🛡 Risk Management", "⚡ Auto Take Profit", "🛑 Stop Loss Protection", "🌙 Dark Theme", "🌐 Language", "💵 Currency", "🔐 Security & 2FA", "❓ Help & Support").forEach { Surface(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), shape = RoundedCornerShape(14.dp), color = Card) { Text(it, Modifier.padding(17.dp)) } }
+        listOf("🔔 Notifications", "🛡 Risk Management", "⚡ Auto Take Profit", "🛑 Stop Loss Protection", "🌙 Dark Theme", "🌐 Language", "💵 Currency", "🔐 Security & 2FA", "❓ Help & Support").forEachIndexed { index, item -> Surface(onClick = { if (index == 0) onNotifications() }, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), shape = RoundedCornerShape(14.dp), color = Card) { Text(item, Modifier.padding(17.dp)) } }
     }
 }
 
