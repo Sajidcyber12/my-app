@@ -204,10 +204,57 @@ fun Notifications() {
 
 @Composable
 fun Profile(onNotifications: () -> Unit = {}) {
+    var dialog by remember { mutableStateOf<String?>(null) }
+    val options = listOf(
+        "🔔 Notifications", "🛡 Risk Management", "⚡ Auto Take Profit",
+        "🛑 Stop Loss Protection", "🌙 Dark Theme", "🌐 Language",
+        "💵 Currency", "🔐 Security & 2FA", "❓ Help & Support"
+    )
+
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Header("Profile & Settings", "Customize your app experience")
         Text("👤  Crypto Signal User", Modifier.padding(20.dp), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        listOf("🔔 Notifications", "🛡 Risk Management", "⚡ Auto Take Profit", "🛑 Stop Loss Protection", "🌙 Dark Theme", "🌐 Language", "💵 Currency", "🔐 Security & 2FA", "❓ Help & Support").forEachIndexed { index, item -> Surface(onClick = { if (index == 0) onNotifications() }, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), shape = RoundedCornerShape(14.dp), color = Card) { Text(item, Modifier.padding(17.dp)) } }
+
+        options.forEachIndexed { index, item ->
+            Surface(
+                onClick = { if (index == 0) onNotifications() else dialog = item },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = Card
+            ) {
+                Row(
+                    Modifier.fillMaxWidth().padding(17.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(item, Modifier.weight(1f))
+                    Text("›", color = Muted, fontSize = 24.sp)
+                }
+            }
+        }
+    }
+
+    dialog?.let { title ->
+        AlertDialog(
+            onDismissRequest = { dialog = null },
+            title = { Text(title) },
+            text = {
+                Text(
+                    when {
+                        title.contains("Risk") -> "Risk Management settings are ready. Configure your risk controls here."
+                        title.contains("Take Profit") -> "Auto Take Profit settings are ready. Configure your target levels here."
+                        title.contains("Stop Loss") -> "Stop Loss Protection settings are ready."
+                        title.contains("Dark Theme") -> "Dark Theme settings are ready."
+                        title.contains("Language") -> "Language settings are ready."
+                        title.contains("Currency") -> "Currency settings are ready."
+                        title.contains("Security") -> "Security & 2FA settings are ready."
+                        else -> "Help & Support is ready."
+                    }
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { dialog = null }) { Text("Done") }
+            }
+        )
     }
 }
 
