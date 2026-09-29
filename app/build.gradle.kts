@@ -4,7 +4,10 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
-android { namespace = "com.cryptosignalai.app"; compileSdk = 35
+android {
+    compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+    kotlinOptions { jvmTarget = "17" }
+    namespace = "com.cryptosignalai.app"; compileSdk = 35
     defaultConfig { applicationId = "com.cryptosignalai.app"; minSdk = 26; targetSdk = 35; versionCode = 4; versionName = "1.0.0" }
 }
 
