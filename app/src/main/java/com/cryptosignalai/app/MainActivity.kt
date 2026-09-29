@@ -138,7 +138,7 @@ fun Home(signals: List<Signal>, loading: Boolean, onRefresh: () -> Unit, favorit
             Text(if (loading) "Updating…" else "Auto refresh", color = Green, fontSize = 12.sp)
         }
         if (signals.isEmpty() && !loading) Text("No signals available right now.", color = Muted, modifier = Modifier.padding(18.dp))
-        filteredSignals.sortedByDescending { it.score }.take(6).forEach { SignalCard(it, isFavorite = favorites.contains(it.symbol), onFavorite = { onFavorite(it.symbol) }, onClick = { onSelect(it) }) }
+        signals.sortedByDescending { it.score }.take(6).forEach { SignalCard(it, isFavorite = favorites.contains(it.symbol), onFavorite = { onFavorite(it.symbol) }, onClick = { onSelect(it) }) }
         Spacer(Modifier.height(20.dp))
     }
 }
