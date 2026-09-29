@@ -9,7 +9,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
 
-class BinanceMarketRepository {
+class BinanceMarketRepository(private val riskPercent: Double = 1.8) {
     private val symbols = listOf(
         Triple("SHIBUSDT", "Shiba Inu", "Meme Coin"),
         Triple("PEPEUSDT", "Pepe Coin", "Meme Coin"),
@@ -51,7 +51,7 @@ class BinanceMarketRepository {
         val score = ai.score
         val side = ai.side
         val entry = price
-        val risk = price * 0.018
+        val risk = price * (riskPercent / 100.0)
         val stop = if (side == "SELL") price + risk else price - risk
         val tp1 = if (side == "SELL") price - risk * 1.5 else price + risk * 1.5
         val tp2 = if (side == "SELL") price - risk * 2.5 else price + risk * 2.5

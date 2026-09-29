@@ -54,12 +54,13 @@ fun CryptoApp() {
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     var favorites by remember { mutableStateOf(loadFavorites(context)) }
+    var riskPercent by remember { mutableStateOf(loadRiskPercent(context)) }
 
     suspend fun refresh() {
         loading = true
         error = null
         runCatching {
-            withContext(Dispatchers.IO) { BinanceMarketRepository().fetchSignals() }
+            withContext(Dispatchers.IO) { BinanceMarketRepository(riskPercent).fetchSignals() }
         }.onSuccess { fresh ->
             if (fresh.isNotEmpty()) signals = fresh else error = "No market data received."
         }.onFailure { error = "Live feed unavailable. Showing last data if available." }
@@ -82,7 +83,7 @@ fun CryptoApp() {
                         1 -> Scanner(signals, onSelect = { selected = it })
                         2 -> Watchlist(signals.filter { favorites.contains(it.symbol) }, onSelect = { selected = it })
                         3 -> Notifications()
-                        else -> Profile(onNotifications = { tab = 3 })
+                        else -> Profile(onNotifications = { tab = 3 }, riskPercent = riskPercent, onRiskChange = { value -> riskPercent = value; saveRiskPercent(context, value); scope.launch { refresh() } })
                     }
                 }
             }
@@ -203,8 +204,10 @@ fun Notifications() {
 }
 
 @Composable
-fun Profile(onNotifications: () -> Unit = {}) {
+fun Profile(onNotifications: () -> Unit = {}, riskPercent: Double = 1.8, onRiskChange: (Double) -> Unit = {}) {
     var dialog by remember { mutableStateOf<String?>(null) }
+    var riskDialog by remember { mutableStateOf(false) }
+    var riskValue by remember { mutableStateOf(riskPercent) }
     val options = listOf(
         "🔔 Notifications", "🛡 Risk Management", "⚡ Auto Take Profit",
         "🛑 Stop Loss Protection", "🌙 Dark Theme", "🌐 Language",
@@ -217,7 +220,7 @@ fun Profile(onNotifications: () -> Unit = {}) {
 
         options.forEachIndexed { index, item ->
             Surface(
-                onClick = { if (index == 0) onNotifications() else dialog = item },
+                onClick = { if (index == 0) onNotifications() else if (index == 1) riskDialog = true else dialog = item },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 shape = RoundedCornerShape(14.dp),
                 color = Card
@@ -231,6 +234,34 @@ fun Profile(onNotifications: () -> Unit = {}) {
                 }
             }
         }
+    }
+
+    if (riskDialog) {
+        AlertDialog(
+            onDismissRequest = { riskDialog = false },
+            title = { Text("🛡 Risk Management") },
+            text = {
+                Column {
+                    Text("Risk per trade: ${String.format("%.1f", riskValue)}%")
+                    Slider(
+                        value = riskValue.toFloat(),
+                        onValueChange = { riskValue = it.toDouble() },
+                        valueRange = 0.5f..5f,
+                        steps = 8
+                    )
+                    Text("Choose between 0.5% and 5.0%")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onRiskChange(riskValue)
+                    riskDialog = false
+                }) { Text("Save") }
+            },
+            dismissButton = {
+                TextButton(onClick = { riskDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 
     dialog?.let { title ->
@@ -309,6 +340,9 @@ fun CandleChart(candles: List<com.cryptosignalai.app.model.Candle>) {
 
 private const val PREFS = "crypto_signal_ai"
 private const val KEY_FAVORITES = "favorites"
+private const val KEY_RISK_PERCENT = "risk_percent"
+private fun loadRiskPercent(context: Context): Double = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getFloat(KEY_RISK_PERCENT, 1.8f).toDouble()
+private fun saveRiskPercent(context: Context, value: Double) { context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putFloat(KEY_RISK_PERCENT, value.toFloat()).apply() }
 private fun loadFavorites(context: Context): Set<String> = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getStringSet(KEY_FAVORITES, emptySet())?.toSet() ?: emptySet()
 private fun toggleFavorite(context: Context, current: Set<String>, symbol: String): Set<String> {
     val next = current.toMutableSet().apply { if (!add(symbol)) remove(symbol) }.toSet()
