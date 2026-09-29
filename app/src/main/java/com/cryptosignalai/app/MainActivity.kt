@@ -102,9 +102,19 @@ fun Header(title: String, subtitle: String, refresh: (() -> Unit)? = null) {
 }
 
 @Composable
-fun Pill(text: String, active: Boolean = false) {
-    Surface(color = if (active) Green else Card, shape = RoundedCornerShape(20.dp)) {
-        Text(text, Modifier.padding(horizontal = 16.dp, vertical = 9.dp), color = if (active) Color.Black else Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+fun Pill(text: String, active: Boolean = false, onClick: () -> Unit = {}) {
+    Surface(
+        onClick = onClick,
+        color = if (active) Green else Card,
+        shape = RoundedCornerShape(20.dp)
+    ) {
+        Text(
+            text,
+            Modifier.padding(horizontal = 16.dp, vertical = 9.dp),
+            color = if (active) Color.Black else Color.White,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.sp
+        )
     }
 }
 
@@ -128,7 +138,7 @@ fun Home(signals: List<Signal>, loading: Boolean, onRefresh: () -> Unit, favorit
             Text(if (loading) "Updating…" else "Auto refresh", color = Green, fontSize = 12.sp)
         }
         if (signals.isEmpty() && !loading) Text("No signals available right now.", color = Muted, modifier = Modifier.padding(18.dp))
-        signals.sortedByDescending { it.score }.take(6).forEach { SignalCard(it, isFavorite = favorites.contains(it.symbol), onFavorite = { onFavorite(it.symbol) }, onClick = { onSelect(it) }) }
+        filteredSignals.sortedByDescending { it.score }.take(6).forEach { SignalCard(it, isFavorite = favorites.contains(it.symbol), onFavorite = { onFavorite(it.symbol) }, onClick = { onSelect(it) }) }
         Spacer(Modifier.height(20.dp))
     }
 }
@@ -155,11 +165,13 @@ fun SignalCard(c: Signal, isFavorite: Boolean = false, onFavorite: () -> Unit = 
 
 @Composable
 fun Scanner(signals: List<Signal>, onSelect: (Signal) -> Unit) {
+    var selectedFilter by remember { mutableStateOf("All") }
+    val filteredSignals = when (selectedFilter) { "Meme Coins" -> signals.filter { it.tag == "Meme Coin" }; "New/Trending" -> signals.filter { it.tag == "New/Trending" }; "High Volume" -> signals.filter { it.indicators.volumeRatio >= 2.0 }; else -> signals }
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
         Header("AI Coin Scanner", "Live Candles  •  RSI  •  MACD  •  EMA  •  Volume")
         Surface(Modifier.padding(16.dp).fillMaxWidth(), shape = RoundedCornerShape(20.dp), color = Color(0xFF062318)) { Column(Modifier.padding(18.dp)) { Text("AI SCANS 24/7", color = Green, fontSize = 25.sp, fontWeight = FontWeight.Bold); Text("Meme coins, momentum and volume spikes", color = Color.White) } }
-        Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp)) { listOf("All", "Meme Coins", "New/Trending", "High Volume").forEachIndexed { i, t -> Box(Modifier.padding(end = 8.dp)) { Pill(t, i == 0) } } }
-        signals.sortedByDescending { it.score }.forEachIndexed { i, c ->
+        Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp)) { listOf("All", "Meme Coins", "New/Trending", "High Volume").forEachIndexed { i, t -> Box(Modifier.padding(end = 8.dp)) { Pill(t, selectedFilter == t) { selectedFilter = t } } } }
+        filteredSignals.sortedByDescending { it.score }.forEachIndexed { i, c ->
             Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("${i + 1}", Modifier.width(28.dp), color = Muted)
                 Column(Modifier.weight(1f)) { Text(c.name, fontWeight = FontWeight.Bold); Text("${c.symbol}  •  ${String.format("%+.2f%%", c.change24h)}", color = if (c.change24h >= 0) Green else Red, fontSize = 12.sp); Text("RSI ${c.indicators.rsi.format1()}  •  Vol ${c.indicators.volumeRatio.format1()}x", color = Muted, fontSize = 11.sp) }
